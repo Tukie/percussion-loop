@@ -9,125 +9,33 @@ import Accordion from 'primevue/accordion';
 import AccordionPanel from 'primevue/accordionpanel';
 import AccordionHeader from 'primevue/accordionheader';
 import AccordionContent from 'primevue/accordioncontent';
+import { getGetInstrument } from '@/services/instrument.service';
+import { loadSamplers } from '@/services/sampler.service';
+import { keyMapping } from '@/services/keyMapping.service';
+import { getDefaultSequence } from '@/services/sequences.service';
 
 let samplers = {};
 const bpm = ref(120);
 const currentStep = ref(-1);
+
 const currentSequence = ref(null);
 const sequenceName = ref('')
+const sequenceColor = ref('#ffffff');
+const sequenceCategory = ref('');
+const numpadKey = ref('');
 
-const instrumentNotes = ref([
-  {
-    id: 'charp',
-    note: 'A0',
-    label: 'Charp',
-    color: 'bg-red-500',
-    url: "charp.wav",
-    pitch: 0,
-    volume: -20
-  },
-  {
-    id: 'ching',
-    note: 'A1',
-    label: 'Ching',
-    color: 'bg-orange-500',
-    url: "ching.wav",
-    pitch: 0,
-    volume: -20
-  },
-  {
-    id: 'tambourine',
-    note: 'A2',
-    label: 'Tambourine',
-    color: 'bg-pink-500',
-    url: "tambourine.wav",
-    pitch: 0,
-    volume: -20
-  },
-
-  {
-    id: 'cowbell',
-    note: 'C4',
-    label: 'Cowbell',
-    color: 'bg-blue-500',
-    url: "cow_low.wav",
-    pitch: 0,
-    volume: -20
-  },
-
-  {
-    id: 'hiconga',
-    note: 'D#4',
-    label: 'Hi Conga',
-    color: 'bg-green-500',
-    url: "hi_conga.wav",
-    pitch: 0,
-    volume: -20
-  },
-
-  {
-    id: 'lowconga',
-    note: 'A4',
-    label: 'Low Conga',
-    color: 'bg-yellow-500',
-    url: "low_conga.wav",
-    pitch: 0,
-    volume: -20
-  },
-
-]);
+const instruments = ref(getGetInstrument());
 
 const numSteps = 32;
 
 const sequence = ref(
-  instrumentNotes.value.map(() => Array(numSteps).fill(false))
+  instruments.value.map(() => Array(numSteps).fill(false))
 );
 
 let loopNow = null;
 
-// Sampler
-const makeSampler = (data = {
-  url: { key: "", value: "" },
-  release: 1,
-  volume: -20,
-  baseUrl: "/",
-}) => {
-  return new Tone.Sampler({
-    urls: {
-      [data.url.key]: data.url.value,
-    },
-    release: 1,
-    volume: data.volume,
-    baseUrl: "/",
-  })
-}
-
-const loadSamplers = () => {
-  samplers = {};
-  for (const instrument of instrumentNotes.value) {
-    const sampler = makeSampler({
-      url: {
-        key: instrument.note,
-        value: instrument.url,
-      },
-      volume: instrument.volume,
-    });
-
-    const pitchShift = new Tone.PitchShift({
-      pitch: instrument?.pitch || 0,
-      windowSize: 0.03,
-      feedback: 0,
-    });
-
-
-    pitchShift.toDestination();
-    sampler.connect(pitchShift);
-    samplers[instrument.note] = sampler
-  }
-}
-
 const changeVolume = (note, value) => {
-  const findInstrument = instrumentNotes.value.find(ins => ins.note === note);
+  const findInstrument = instruments.value.find(ins => ins.note === note);
   if (!findInstrument) return;
   findInstrument.value = parseInt(value || 0);
   samplers[note].volume.value = value;
@@ -135,7 +43,7 @@ const changeVolume = (note, value) => {
 }
 
 const initToneLoad = () => {
-  loadSamplers();
+  samplers = loadSamplers(instruments.value);
 
   Tone.loaded().then(() => {
     Tone.getTransport().bpm.value = bpm.value;
@@ -144,7 +52,7 @@ const initToneLoad = () => {
       (time, stepIndex) => {
         currentStep.value = stepIndex;
 
-        instrumentNotes.value.forEach((instrument, instIndex) => {
+        instruments.value.forEach((instrument, instIndex) => {
           if (sequence.value[instIndex][stepIndex]) {
             samplers[instrument.note].triggerAttackRelease(instrument.note, "32n", time);
           }
@@ -156,10 +64,6 @@ const initToneLoad = () => {
 
     sequencerLoop.start(0);
   });
-}
-
-const init = () => {
-  initToneLoad();
 }
 
 const toggleStep = (instrumentIndex, stepIndex) => {
@@ -202,7 +106,7 @@ watch(sequenceQueue, (queue) => {
 
 // Sequence
 const startSequencer = async () => {
-  if (Tone.context.state !== 'running') {
+  if (Tone.getContext().state !== 'running') {
     await Tone.start();
     console.log('Audio Context started/resumed');
   }
@@ -212,6 +116,7 @@ const startSequencer = async () => {
 const stopSequencer = async () => {
   Tone.getTransport().stop();
   currentStep.value = -1;
+  currentSequence.value = null;
   clearInterval(loopNow);
   removeAllQueue();
 };
@@ -250,15 +155,28 @@ const saveSequence = () => {
       id: `sequence-${randomKey}`,
       name: sequenceName.value,
       sequence: sequence.value,
-      bpm: bpm.value
+      bpm: bpm.value,
+      color: sequenceColor.value,
+      category: sequenceCategory.value,
+      numpad: numpadKey.value
     }
   ));
+
   listAllSavedSequences();
 };
 
 const deleteSequence = (key) => {
   localStorage.removeItem(key);
   listAllSavedSequences();
+};
+
+const setSequenceDetails = (savedSequence, key) => {
+  sequence.value = savedSequence.sequence;
+  currentSequence.value = key;
+  sequenceName.value = savedSequence.name;
+  sequenceColor.value = savedSequence.color;
+  sequenceCategory.value = savedSequence.category;
+  numpadKey.value = savedSequence.numpad;
 };
 
 const loadSequence = (key = null) => {
@@ -270,9 +188,7 @@ const loadSequence = (key = null) => {
   savedSequence = JSON.parse(savedSequence);
 
   if (Tone.getTransport().state !== 'started') {
-    currentSequence.value = key;
-    sequence.value = savedSequence.sequence;
-    sequenceName.value = savedSequence.name;
+    setSequenceDetails(savedSequence, key);
     startSequencer();
     removeQueue(key);
     return
@@ -280,40 +196,56 @@ const loadSequence = (key = null) => {
 
   loopNow = setInterval(() => {
     console.log("Interval Load sq");
-
     if (currentStep.value >= 29 && currentStep.value <= 32) {
-      sequence.value = savedSequence.sequence;
-      currentSequence.value = key;
-      sequenceName.value = savedSequence.name;
       clearInterval(loopNow);
+      setSequenceDetails(savedSequence, key);
       removeQueue(key);
     }
   }, 100);
 
 };
 
-const loadSequenceByIndex = (index = 0) => {
-  const keys = Object.keys(localStorage);
-  const filter = keys.filter(key => key.startsWith('sequence-'));
-  if (filter[index]) {
-    addToQueue(filter[index]);
-
-  }
+const allSavedSequences = ref([]);
+const groupByCategory = ref([]);
+const groupSequenceByCategory = () => {
+  groupByCategory.value = [];
+  allSavedSequences.value.forEach(sq => {
+    const findGroupName = groupByCategory.value.find(group => group.name === sq.category);
+    if (findGroupName) {
+      findGroupName.sequences.push(sq);
+    } else {
+      groupByCategory.value.push({
+        name: sq.category,
+        sequences: [sq]
+      });
+    }
+  })
 }
 
-const allSavedSequences = ref([]);
 const listAllSavedSequences = () => {
   const keys = Object.keys(localStorage);
   const filterKey = keys.filter(key => key.startsWith('sequence-'));
   allSavedSequences.value = filterKey.map(key => {
     return JSON.parse(localStorage.getItem(key));
   });
+
+  groupSequenceByCategory();
+  initKeyMapping();
 };
 
 const clearAllSavedSequences = () => {
-  allSavedSequences.value.forEach(key => localStorage.removeItem(key));
-  allSavedSequences.value = [];
-};
+  localStorage.clear();
+  listAllSavedSequences();
+}
+
+const setDefaultSequences = () => {
+  const sequences = getDefaultSequence();
+  sequences.forEach(sq => {
+    localStorage.setItem(sq.id, JSON.stringify(sq));
+  })
+
+  listAllSavedSequences();
+}
 
 const playSelectedSound = (key = null) => {
   if (!key) return;
@@ -322,34 +254,29 @@ const playSelectedSound = (key = null) => {
   }
 }
 
-const keyBinding = () => {
-  document.addEventListener('keydown', (event) => {
-    const numpadNumber = Array.from({ length: 9 }, (_, i) => `Numpad${i + 1}`);
-    if (numpadNumber.includes(event.code)) {
-      loadSequenceByIndex(event.code.replace("Numpad", "") - 1);
-      return;
+const initKeyMapping = () => {
+  const keys = [
+    { key: 'Numpad0', function: () => stopSequencer() },
+    { key: 'NumpadAdd', function: () => setBpm(bpm.value + 1) },
+    { key: 'NumpadSubtract', function: () => setBpm(bpm.value - 1) },
+    { key: 'NumpadDecimal', function: () => playHalfBar() },
+  ];
+
+  allSavedSequences.value.forEach(sq => {
+    if (sq.numpad) {
+      const findDuplicate = keys.find(k => k.key === sq.numpad);
+      if (!findDuplicate) {
+        keys.push({
+          key: sq.numpad, function: () => {
+            addToQueue(sq.id)
+          }
+        });
+      }
     }
+  }
+  )
 
-    switch (event.code) {
-      case "Numpad0":
-        if (Tone.getTransport().state === 'started') {
-          stopSequencer();
-          return;
-        }
-        startSequencer();
-        break;
-      case "NumpadAdd":
-        setBpm(bpm.value + 1);
-        break;
-      case "NumpadSubtract":
-        setBpm(bpm.value - 1);
-        break;
-
-      default:
-        break;
-    }
-
-  });
+  keyMapping(keys);
 }
 
 watch(bpm, (newBpm) => {
@@ -357,9 +284,9 @@ watch(bpm, (newBpm) => {
 });
 
 onMounted(() => {
-  init();
-  listAllSavedSequences();
-  keyBinding();
+  initToneLoad();
+  clearAllSavedSequences();
+  setDefaultSequences();
 });
 </script>
 
@@ -369,7 +296,7 @@ onMounted(() => {
       <h1 class="text-4xl font-extrabold text-center text-teal-400 mb-8">Percussion Loop</h1>
       <Accordion value="0">
         <AccordionPanel value="0">
-          <AccordionHeader>ขัดการจังหวะ</AccordionHeader>
+          <AccordionHeader>จัดการจังหวะ</AccordionHeader>
           <AccordionContent>
             <div class="">
               <!-- Sequencer Grid -->
@@ -384,7 +311,7 @@ onMounted(() => {
                   </div>
 
                   <!-- Instrument Rows -->
-                  <div v-for="(instrument, instIndex) in instrumentNotes" :key="instrument.id"
+                  <div v-for="(instrument, instIndex) in instruments" :key="instrument.id"
                     class="flex items-center mb-1">
                     <button
                       :class="[instrument.color, 'w-28 text-sm py-2 px-2 rounded-l-lg font-bold mr-2 flex-shrink-0']"
@@ -407,10 +334,31 @@ onMounted(() => {
                 </div>
               </div>
 
-              <div class="flex flex-col mx-auto max-w-42 item-center gap-5 justify-center">
-                <input type="text" v-model="sequenceName"
-                  class=" bg-gray-700 border border-gray-600 text-white p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center">
-                <Button @click="saveSequence" :disabled="sequenceName.trim() === ''">
+              <div class="flex flex-col mx-auto max-w-md item-center gap-5 justify-center">
+                <div class="flex flex-col md:flex-row gap-2 items-center justify-center">
+                  <div>
+                    <label for="sequence-color" class="block text-sm font-medium text-gray-400 mb-2">สี</label>
+                    <input type="color" v-model="sequenceColor" class="w-10 h-10">
+                  </div>
+                  <div>
+                    <label for="sequence-category" class="block text-sm font-medium text-gray-400 mb-2">ประเภท</label>
+                    <input type="text" v-model="sequenceCategory"
+                      class=" bg-gray-700 border border-gray-600 text-white p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center">
+                  </div>
+                  <div>
+                    <label for="sequence-name" class="block text-sm font-medium text-gray-400 mb-2">ชื่อ</label>
+                    <input type="text" v-model="sequenceName"
+                      class=" bg-gray-700 border border-gray-600 text-white p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center">
+                  </div>
+                  <div>
+                    <label for="sequence-numpad" class="block text-sm font-medium text-gray-400 mb-2">Numpad Key</label>
+                    <input type="text" v-model="numpadKey"
+                      class=" bg-gray-700 border border-gray-600 text-white p-2 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-center">
+                  </div>
+                </div>
+                <Button @click="saveSequence"
+                  :disabled="sequenceName.trim() === '' || sequenceCategory.trim() === '' || sequenceColor.trim() === ''"
+                  class="mx-auto">
                   บันทึก
                 </Button>
               </div>
@@ -464,12 +412,16 @@ onMounted(() => {
       <!-- Saved list -->
       <hr class="my-10" />
 
-      <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-        <LoopItem v-for="sq in allSavedSequences" :key="sq" @addToQueue="addToQueue" @deleteSequence="deleteSequence"
-          :sq :playing="currentSequence === sq.id" :inQueue="sequenceQueue.includes(sq.id)" />
+      <div class="flex flex-col gap-5" v-for="group in groupByCategory" :key="group">
+        <span class="fw-semibold text-lg p-2 rounded-full bg-gray-700 text-center mb-3">{{ group.name }}</span>
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          <LoopItem v-for="sq in group.sequences" :key="sq" @addToQueue="addToQueue" @deleteSequence="deleteSequence"
+            :sq :playing="currentSequence === sq.id" :inQueue="sequenceQueue.includes(sq.id)" />
+        </div>
       </div>
+
     </main>
 
-    <MixerComponent :instrumentNotes @changeVolume="changeVolume" />
+    <MixerComponent :instrumentNotes="instruments" @changeVolume="changeVolume" />
   </div>
 </template>
