@@ -27,7 +27,7 @@ const props = defineProps({
     <Button @click="emit('addToQueue', sq.id)" :disabled="props.playing" :label="sq.name" unstyled
       class="px-1 py-5 rounded-s-md text-black font-semibold w-full" :style="{ backgroundColor: sq.color }" />
     <ConfirmButton @confirm="emit('deleteSequence', sq.id)" message="ยืนยันการลบหรือไม่?" severity="danger">
-      <Button label="ลบ" severity="danger" class="px-1 py-5 bg-red-500 rounded-e-md" unstyled />
+      <Button label="ลบ" severity="danger" class="px-0.5 text-xs py-6 bg-red-500 rounded-e-md" unstyled />
     </ConfirmButton>
   </div>
 </template>

@@ -291,10 +291,9 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-900 text-white p-6 flex items-center justify-center">
-    <main class="w-full bg-gray-800 rounded-xl shadow-2xl p-8 space-y-6 border border-gray-700 container mx-auto">
-      <h1 class="text-4xl font-extrabold text-center text-teal-400 mb-8">Percussion Loop</h1>
-      <Accordion value="0">
+  <div class="bg-gray-900 text-white flex items-center justify-center">
+    <main class="w-full bg-gray-800 rounded-xl shadow-2xl space-y-6 border border-gray-700 px-8 py-2">
+      <Accordion>
         <AccordionPanel value="0">
           <AccordionHeader>จัดการจังหวะ</AccordionHeader>
           <AccordionContent>
@@ -365,15 +364,9 @@ onMounted(() => {
             </div>
           </AccordionContent>
         </AccordionPanel>
-        <AccordionPanel value="1">
-          <AccordionHeader>ควบคุม</AccordionHeader>
-          <AccordionContent>
-            <div class="">
-              <BPMControl :bpm @setBpm="setBpm" />
-            </div>
-          </AccordionContent>
-        </AccordionPanel>
       </Accordion>
+
+      <BPMControl v-model:bpm="bpm" />
 
       <!-- Playback Buttons -->
       <div class="flex gap-4 justify-center items-center">
@@ -400,20 +393,17 @@ onMounted(() => {
 
       <!-- Light -->
       <div class="flex gap-2 justify-center">
-        <div class="h-4 w-8 rounded-sm" :class="currentStep >= 1 && currentStep <= 8 ? 'bg-yellow-300' : 'bg-gray-600'">
+        <div class="h-2 w-4 rounded-sm" :class="currentStep >= 1 && currentStep <= 8 ? 'bg-yellow-300' : 'bg-gray-600'">
         </div>
-        <div class="h-4 w-8 rounded-sm"
+        <div class="h-2 w-4 rounded-sm"
           :class="currentStep >= 9 && currentStep <= 16 ? 'bg-yellow-300' : 'bg-gray-600'"></div>
-        <div class="h-4 w-8 rounded-sm"
+        <div class="h-2 w-4 rounded-sm"
           :class="currentStep >= 17 && currentStep <= 24 ? 'bg-yellow-300' : 'bg-gray-600'"></div>
-        <div class="h-4 w-8 rounded-sm" :class="currentStep >= 25 ? 'bg-yellow-300' : 'bg-gray-600'"></div>
+        <div class="h-2 w-4 rounded-sm" :class="currentStep >= 25 ? 'bg-yellow-300' : 'bg-gray-600'"></div>
       </div>
 
-      <!-- Saved list -->
-      <hr class="my-10" />
-
-      <div class="flex flex-col gap-5" v-for="group in groupByCategory" :key="group">
-        <span class="fw-semibold text-lg p-2 rounded-full bg-gray-700 text-center mb-3">{{ group.name }}</span>
+      <div class="flex flex-col gap-2" v-for="group in groupByCategory" :key="group">
+        <span class="fw-semibold p-2 rounded-full bg-gray-700 text-center mb-3 text-xs">{{ group.name }}</span>
         <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
           <LoopItem v-for="sq in group.sequences" :key="sq" @addToQueue="addToQueue" @deleteSequence="deleteSequence"
             :sq :playing="currentSequence === sq.id" :inQueue="sequenceQueue.includes(sq.id)" />

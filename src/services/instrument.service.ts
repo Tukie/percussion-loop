@@ -70,7 +70,7 @@ const instrumentList = [
     color: 'bg-green-500',
     url: 'conga_2.wav',
     pitch: 0,
-    volume: -20,
+    volume: -30,
   },
   {
     id: 'hiconga',
