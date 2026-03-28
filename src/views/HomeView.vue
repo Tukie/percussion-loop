@@ -122,12 +122,16 @@ const stopSequencer = async () => {
 };
 
 let intervalHalfBar = null;
+const waitingForHalfBar = ref(false);
+
 const playHalfBar = () => {
   clearInterval(intervalHalfBar);
 
   if (Tone.getTransport().state !== 'started') {
     return;
   }
+
+  waitingForHalfBar.value = true;
 
   intervalHalfBar = setInterval(() => {
 
@@ -138,6 +142,7 @@ const playHalfBar = () => {
 
       setTimeout(() => {
         Tone.getTransport().position = "0:2:0";
+        waitingForHalfBar.value = false;
       }, 22);
     }
   }, 20);
@@ -371,20 +376,21 @@ onMounted(() => {
       <!-- Playback Buttons -->
       <div class="flex gap-4 justify-center items-center">
         <button @click="startSequencer"
-          class="bg-lime-600 hover:bg-lime-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 active:scale-95 flex items-center space-x-2">
+          class="bg-lime-600 hover:bg-lime-700 text-white font-bold py-5 px-16 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 active:scale-95 flex items-center space-x-2">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M8 5v14l11-7z" />
           </svg>
         </button>
         <button @click="playHalfBar"
-          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 active:scale-95 flex items-center space-x-2">
+          class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-5 px-16 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 active:scale-95 flex items-center space-x-2"
+          :class="{ 'ring-4 ring-yellow-500': waitingForHalfBar }">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 6h12v12H6z" />
           </svg>
           <span>สลับ 2/4</span>
         </button>
         <button @click="stopSequencer"
-          class="bg-red-600 hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 active:scale-95 flex items-center space-x-2">
+          class="bg-red-600 hover:bg-red-700 text-white font-bold py-5 px-16 rounded-lg shadow-lg transition duration-300 ease-in-out transform hover:scale-105 active:scale-95 flex items-center space-x-2">
           <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
             <path d="M6 6h12v12H6z" />
           </svg>
