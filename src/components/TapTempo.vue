@@ -31,9 +31,9 @@ const handleUseBPM = () => {
       <Button type="button" label="Tap" @click="tap()" size="large" class="w-39" />
 
       <div class="flex w-full items-center gap-4 my-5">
-        <Button type="button" label="Save" @click="handleUseBPM" class="w-full"></Button>
         <Button type="button" severity="contrast" label="Reset" @click="reset(); openDialog = false"
           class="w-full"></Button>
+        <Button type="button" label="Save" @click="handleUseBPM" class="w-full"></Button>
       </div>
 
     </div>
