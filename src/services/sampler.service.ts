@@ -18,14 +18,19 @@ export function createSamplerBank(instruments: InstrumentSample[]) {
       volume: instrument.volume,
       baseUrl: '/',
     })
-    const pitchShift = new Tone.PitchShift({
-      pitch: instrument.pitch || 0,
-      windowSize: 0.03,
-      feedback: 0,
-    })
-    pitchShift.toDestination()
-    sampler.connect(pitchShift)
-    effects.push(pitchShift)
+    // A zero-pitch effect still processes audio; connect those samples directly.
+    if (instrument.pitch) {
+      const pitchShift = new Tone.PitchShift({
+        pitch: instrument.pitch,
+        windowSize: 0.03,
+        feedback: 0,
+      })
+      pitchShift.toDestination()
+      sampler.connect(pitchShift)
+      effects.push(pitchShift)
+    } else {
+      sampler.toDestination()
+    }
 
     samplers[instrument.note] = sampler
   }
