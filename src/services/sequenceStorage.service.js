@@ -95,10 +95,11 @@ export function createSequenceStorage(storage, defaults = []) {
 
   const remove = (id) => storage.removeItem(id)
 
-  const move = (id, targetPosition) => {
+  const move = (id, targetPosition, targetCategory) => {
     const source = get(id)
     if (!source || !isValidPosition(source.position) || !isValidPosition(targetPosition))
       return false
+    if (targetCategory !== undefined && source.category !== targetCategory) return false
     if (source.position === targetPosition) return true
 
     const target = list().find(

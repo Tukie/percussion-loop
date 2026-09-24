@@ -109,6 +109,16 @@ test('moves loops across pages and swaps occupied slots persistently', () => {
   assert.equal(restored.get(otherGroup.id).position, 0)
 })
 
+test('rejects placing a loop in a different group', () => {
+  const storage = createSequenceStorage(new MemoryStorage())
+  const slow = storage.save({ name: 'Slow', category: 'ช้า' })
+  const fast = storage.save({ name: 'Fast', category: 'เร็ว' })
+
+  assert.equal(storage.move(slow.id, 2, 'เร็ว'), false)
+  assert.equal(storage.get(slow.id).position, 0)
+  assert.equal(storage.get(fast.id).position, 0)
+})
+
 test('preserves a loop position when saving the same name again', () => {
   const storage = createSequenceStorage(new MemoryStorage())
   const first = storage.save({ name: 'Loop', category: 'ช้า' })

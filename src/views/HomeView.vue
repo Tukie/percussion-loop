@@ -3,7 +3,6 @@ import BPMControl from '@/components/BPMControl.vue'
 import LoopGridCell from '@/components/LoopGridCell.vue'
 import MixerComponent from '@/components/MixerComponent.vue'
 import { usePercussionLoop } from '@/composable/usePercussionLoop'
-import { DnDProvider } from '@vue-dnd-kit/core'
 import Accordion from 'primevue/accordion'
 import AccordionPanel from 'primevue/accordionpanel'
 import AccordionHeader from 'primevue/accordionheader'
@@ -28,6 +27,8 @@ const {
   activeGroup,
   pageCount,
   loopPages,
+  ordering,
+  selectedLoopId,
   changeVolume,
   toggleStep,
   startSequencer,
@@ -35,7 +36,9 @@ const {
   playHalfBar,
   saveSequence,
   deleteSequence,
-  moveSequence,
+  toggleOrdering,
+  selectLoop,
+  placeSequence,
   playSelectedSound,
   addToQueue,
 } = usePercussionLoop()
@@ -155,7 +158,7 @@ const {
       </div>
 
       <section v-if="activeGroup" class="space-y-5">
-        <div class="flex justify-center">
+        <div class="flex flex-wrap items-center justify-center gap-3">
           <div role="group" aria-label="กลุ่มจังหวะ"
             class="inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-gray-700 bg-gray-900 p-1.5 shadow-inner">
             <button v-for="group in groupByCategory" :key="group.name" type="button"
@@ -167,22 +170,29 @@ const {
               {{ group.name }}
             </button>
           </div>
+          <button type="button" class="rounded-full border px-5 py-2.5 text-sm font-semibold transition-colors"
+            :class="ordering ? 'border-teal-400 bg-teal-600 text-white' : 'border-gray-600 bg-gray-900 text-gray-300 hover:bg-gray-700'"
+            :aria-pressed="ordering" @click="toggleOrdering">
+            {{ ordering ? 'เสร็จสิ้น' : 'จัดเรียงช่อง' }}
+          </button>
         </div>
-        <DnDProvider>
-          <div class="space-y-8">
-            <div v-for="page in loopPages" :key="page.number" class="space-y-3">
-              <h2 v-if="pageCount > 1" class="text-center text-sm font-medium text-gray-400">หน้า {{ page.number }}</h2>
-              <div class="overflow-x-auto">
-                <div class="grid min-w-[720px] grid-cols-4 gap-4">
-                  <LoopGridCell v-for="slot in page.slots" :key="`${activeCategory}-${slot.position}`"
-                    :position="slot.position" :sequence="slot.sequence" :category="activeGroup.name"
-                    :playing="currentSequence === slot.sequence?.id" :in-queue="sequenceQueue.includes(slot.sequence?.id)"
-                    @move-sequence="moveSequence" @addToQueue="addToQueue" @deleteSequence="deleteSequence" />
-                </div>
+        <p v-if="ordering" class="text-center text-sm text-gray-300">
+          เลือก loop ด้วยช่องสี่เหลี่ยม แล้วแตะช่องที่จะวาง หากช่องนั้นมี loop อยู่จะสลับตำแหน่งกัน
+        </p>
+        <div class="space-y-8">
+          <div v-for="page in loopPages" :key="page.number" class="space-y-3">
+            <h2 v-if="pageCount > 1" class="text-center text-sm font-medium text-gray-400">หน้า {{ page.number }}</h2>
+            <div class="overflow-x-auto">
+              <div class="grid min-w-[720px] grid-cols-4 gap-4">
+                <LoopGridCell v-for="slot in page.slots" :key="`${activeCategory}-${slot.position}`"
+                  :position="slot.position" :sequence="slot.sequence" :ordering :selected-loop-id="selectedLoopId"
+                  :playing="currentSequence === slot.sequence?.id" :in-queue="sequenceQueue.includes(slot.sequence?.id)"
+                  @select-loop="selectLoop" @place-sequence="placeSequence"
+                  @addToQueue="addToQueue" @deleteSequence="deleteSequence" />
               </div>
             </div>
           </div>
-        </DnDProvider>
+        </div>
       </section>
 
     </main>

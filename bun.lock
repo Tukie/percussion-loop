@@ -8,7 +8,6 @@
         "@primeuix/themes": "^1.2.5",
         "@tabler/icons-vue": "^3.48.0",
         "@tailwindcss/vite": "^4.3.3",
-        "@vue-dnd-kit/core": "^2.4.7",
         "pinia": "^3.0.4",
         "primevue": "^4.5.5",
         "tailwindcss": "^4.3.3",
@@ -301,8 +300,6 @@
     "@types/json-schema": ["@types/json-schema@7.0.15", "", {}, "sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA=="],
 
     "@vitejs/plugin-vue": ["@vitejs/plugin-vue@6.0.9", "", { "dependencies": { "@rolldown/pluginutils": "^1.0.1" }, "peerDependencies": { "vite": "^5.0.0 || ^6.0.0 || ^7.0.0 || ^8.0.0", "vue": "^3.2.25" } }, "sha512-rD/MORlhaZMlXWW0rEn4FB4wMinWC0z/D7Ye160S5+Rs1mC8ZDAdcDp4SjKfUhG5t8q1ktcPVw4xuTkPRlzrSA=="],
-
-    "@vue-dnd-kit/core": ["@vue-dnd-kit/core@2.4.7", "", { "peerDependencies": { "vue": "^3.5.13" } }, "sha512-v477XFegqzoAPwkl5dcfds/ySyPdSdg0q5vlqXgAQdbUI5SmhN/pb4Sr8gBU23b+1qYB5KBF/B1JAvuVGUUQwA=="],
 
     "@vue/babel-helper-vue-transform-on": ["@vue/babel-helper-vue-transform-on@1.5.0", "", {}, "sha512-0dAYkerNhhHutHZ34JtTl2czVQHUNWv6xEbkdF5W+Yrv5pCWsqjeORdOgbtW2I9gWlt+wBmVn+ttqN9ZxR5tzA=="],
 

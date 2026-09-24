@@ -15,7 +15,6 @@
     "@primeuix/themes": "^1.2.5",
     "@tabler/icons-vue": "^3.48.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@vue-dnd-kit/core": "^2.4.7",
     "pinia": "^3.0.4",
     "primevue": "^4.5.5",
     "tailwindcss": "^4.3.3",

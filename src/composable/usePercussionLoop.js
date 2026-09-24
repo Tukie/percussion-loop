@@ -15,6 +15,8 @@ export function usePercussionLoop() {
   const sequenceCategory = ref('')
   const numpadKey = ref('')
   const savedSequences = ref([])
+  const ordering = ref(false)
+  const selectedLoopId = ref(null)
   const groupByCategory = computed(() => groupSequencesByCategory(savedSequences.value))
   const selectedCategory = ref(null)
   const activeCategory = computed({
@@ -24,6 +26,7 @@ export function usePercussionLoop() {
         : (groupByCategory.value[0]?.name ?? null),
     set: (category) => {
       selectedCategory.value = category
+      selectedLoopId.value = null
     },
   })
   const activeGroup = computed(() =>
@@ -81,16 +84,34 @@ export function usePercussionLoop() {
       numpad: numpadKey.value,
     })
     refreshSavedSequences()
+    selectedLoopId.value = null
     activeCategory.value = sequenceCategory.value
   }
 
   const deleteSequence = (id) => {
     storage.remove(id)
+    if (selectedLoopId.value === id) selectedLoopId.value = null
     refreshSavedSequences()
   }
 
-  const moveSequence = (id, position) => {
-    if (storage.move(id, position)) savedSequences.value = storage.list()
+  const toggleOrdering = () => {
+    ordering.value = !ordering.value
+    selectedLoopId.value = null
+  }
+
+  const selectLoop = (id) => {
+    if (!ordering.value) return
+    const selected = storage.get(id)
+    if (selected?.category !== activeCategory.value) return
+    selectedLoopId.value = selectedLoopId.value === id ? null : id
+  }
+
+  const placeSequence = (position) => {
+    if (!ordering.value || !selectedLoopId.value) return
+    if (storage.move(selectedLoopId.value, position, activeCategory.value)) {
+      savedSequences.value = storage.list()
+      selectedLoopId.value = null
+    }
   }
 
   onMounted(() => {
@@ -123,6 +144,8 @@ export function usePercussionLoop() {
     activeGroup,
     pageCount,
     loopPages,
+    ordering,
+    selectedLoopId,
     changeVolume: playback.changeVolume,
     toggleStep: playback.toggleStep,
     startSequencer: playback.startSequencer,
@@ -130,7 +153,9 @@ export function usePercussionLoop() {
     playHalfBar: playback.playHalfBar,
     saveSequence,
     deleteSequence,
-    moveSequence,
+    toggleOrdering,
+    selectLoop,
+    placeSequence,
     playSelectedSound: playback.playSelectedSound,
     addToQueue,
   }
