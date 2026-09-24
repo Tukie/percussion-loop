@@ -1,298 +1,38 @@
 <script setup>
-import BPMControl from '@/components/BPMControl.vue';
-import LoopItem from '@/components/LoopItem.vue';
-import MixerComponent from '@/components/MixerComponent.vue';
-import { Button } from 'primevue';
-import * as Tone from 'tone';
-import { onMounted, ref, watch } from 'vue';
-import Accordion from 'primevue/accordion';
-import AccordionPanel from 'primevue/accordionpanel';
-import AccordionHeader from 'primevue/accordionheader';
-import AccordionContent from 'primevue/accordioncontent';
-import { getGetInstrument } from '@/services/instrument.service';
-import { loadSamplers } from '@/services/sampler.service';
-import { keyMapping } from '@/services/keyMapping.service';
-import { getDefaultSequence } from '@/services/sequences.service';
+import BPMControl from '@/components/BPMControl.vue'
+import LoopItem from '@/components/LoopItem.vue'
+import MixerComponent from '@/components/MixerComponent.vue'
+import { usePercussionLoop } from '@/composable/usePercussionLoop'
+import Accordion from 'primevue/accordion'
+import AccordionPanel from 'primevue/accordionpanel'
+import AccordionHeader from 'primevue/accordionheader'
+import AccordionContent from 'primevue/accordioncontent'
+import { Button } from 'primevue'
 
-let samplers = {};
-const bpm = ref(120);
-const currentStep = ref(-1);
-
-const currentSequence = ref(null);
-const sequenceName = ref('')
-const sequenceColor = ref('#ffffff');
-const sequenceCategory = ref('');
-const numpadKey = ref('');
-
-const instruments = ref(getGetInstrument());
-
-const numSteps = 32;
-
-const sequence = ref(
-  instruments.value.map(() => Array(numSteps).fill(false))
-);
-
-let loopNow = null;
-
-const changeVolume = (note, value) => {
-  const findInstrument = instruments.value.find(ins => ins.note === note);
-  if (!findInstrument) return;
-  findInstrument.value = parseInt(value || 0);
-  samplers[note].volume.value = value;
-  findInstrument.volume = value;
-}
-
-const initToneLoad = () => {
-  samplers = loadSamplers(instruments.value);
-
-  Tone.loaded().then(() => {
-    Tone.getTransport().bpm.value = bpm.value;
-
-    let sequencerLoop = new Tone.Sequence(
-      (time, stepIndex) => {
-        currentStep.value = stepIndex;
-
-        instruments.value.forEach((instrument, instIndex) => {
-          if (sequence.value[instIndex][stepIndex]) {
-            samplers[instrument.note].triggerAttackRelease(instrument.note, "32n", time);
-          }
-        });
-      },
-      Array.from({ length: numSteps }, (_, i) => i),
-      "32n"
-    );
-
-    sequencerLoop.start(0);
-  });
-}
-
-const toggleStep = (instrumentIndex, stepIndex) => {
-  if (sequence.value[instrumentIndex]) {
-    sequence.value[instrumentIndex][stepIndex] = !sequence.value[instrumentIndex][stepIndex];
-  }
-};
-
-const setBpm = (bpmValue) => {
-  const parsedBpm = parseInt(bpmValue);
-  if (isNaN(parsedBpm) || parsedBpm < 20 || parsedBpm > 200) return
-  bpm.value = parsedBpm;
-  Tone.getTransport().bpm.value = parsedBpm;
-};
-
-// Queue
-const sequenceQueue = ref([]);
-
-const addToQueue = (key) => {
-  clearInterval(loopNow);
-  if (sequenceQueue.value.includes(key)) return;
-  removeAllQueue();
-  sequenceQueue.value.push(key);
-}
-
-const removeQueue = (key) => {
-  sequenceQueue.value = sequenceQueue.value.filter(k => k !== key);
-}
-
-const removeAllQueue = () => {
-  sequenceQueue.value = [];
-  currentSequence.value = null;
-}
-
-watch(sequenceQueue, (queue) => {
-  if (queue) {
-    loadSequence(queue[0]);
-  }
-}, { deep: true });
-
-// Sequence
-const startSequencer = async () => {
-  if (Tone.getContext().state !== 'running') {
-    await Tone.start();
-    console.log('Audio Context started/resumed');
-  }
-  Tone.getTransport().start();
-};
-
-const stopSequencer = async () => {
-  Tone.getTransport().stop();
-  currentStep.value = -1;
-  currentSequence.value = null;
-  clearInterval(loopNow);
-  removeAllQueue();
-};
-
-let intervalHalfBar = null;
-const waitingForHalfBar = ref(false);
-
-const playHalfBar = () => {
-  clearInterval(intervalHalfBar);
-
-  if (Tone.getTransport().state !== 'started') {
-    return;
-  }
-
-  waitingForHalfBar.value = true;
-
-  intervalHalfBar = setInterval(() => {
-
-    console.log("Interval From sw 2.4");
-
-    if (currentStep.value === 31) {
-      clearInterval(intervalHalfBar);
-
-      setTimeout(() => {
-        Tone.getTransport().position = "0:2:0";
-        waitingForHalfBar.value = false;
-      }, 22);
-    }
-  }, 20);
-}
-
-const saveSequence = () => {
-  const findExitName = allSavedSequences.value.find(sq => sq.name === sequenceName.value);
-  if (findExitName) {
-    localStorage.removeItem(findExitName.id);
-  }
-
-  const randomKey = Math.random().toString(36).substring(2, 15);
-  localStorage.setItem(`sequence-${randomKey}`, JSON.stringify(
-    {
-      id: `sequence-${randomKey}`,
-      name: sequenceName.value,
-      sequence: sequence.value,
-      bpm: bpm.value,
-      color: sequenceColor.value,
-      category: sequenceCategory.value,
-      numpad: numpadKey.value
-    }
-  ));
-
-  listAllSavedSequences();
-};
-
-const deleteSequence = (key) => {
-  localStorage.removeItem(key);
-  listAllSavedSequences();
-};
-
-const setSequenceDetails = (savedSequence, key) => {
-  sequence.value = savedSequence.sequence;
-  currentSequence.value = key;
-  sequenceName.value = savedSequence.name;
-  sequenceColor.value = savedSequence.color;
-  sequenceCategory.value = savedSequence.category;
-  numpadKey.value = savedSequence.numpad;
-};
-
-const loadSequence = (key = null) => {
-  if (!key) return
-
-  let savedSequence = localStorage.getItem(key);
-  if (!savedSequence) return
-
-  savedSequence = JSON.parse(savedSequence);
-
-  if (Tone.getTransport().state !== 'started') {
-    setSequenceDetails(savedSequence, key);
-    startSequencer();
-    removeQueue(key);
-    return
-  }
-
-  loopNow = setInterval(() => {
-    console.log("Interval Load sq");
-    if (currentStep.value >= 29 && currentStep.value <= 32) {
-      clearInterval(loopNow);
-      setSequenceDetails(savedSequence, key);
-      removeQueue(key);
-    }
-  }, 100);
-
-};
-
-const allSavedSequences = ref([]);
-const groupByCategory = ref([]);
-const groupSequenceByCategory = () => {
-  groupByCategory.value = [];
-  allSavedSequences.value.forEach(sq => {
-    const findGroupName = groupByCategory.value.find(group => group.name === sq.category);
-    if (findGroupName) {
-      findGroupName.sequences.push(sq);
-    } else {
-      groupByCategory.value.push({
-        name: sq.category,
-        sequences: [sq]
-      });
-    }
-  })
-}
-
-const listAllSavedSequences = () => {
-  const keys = Object.keys(localStorage);
-  const filterKey = keys.filter(key => key.startsWith('sequence-'));
-  allSavedSequences.value = filterKey.map(key => {
-    return JSON.parse(localStorage.getItem(key));
-  });
-
-  groupSequenceByCategory();
-  initKeyMapping();
-};
-
-const clearAllSavedSequences = () => {
-  localStorage.clear();
-  listAllSavedSequences();
-}
-
-const setDefaultSequences = () => {
-  const sequences = getDefaultSequence();
-  sequences.forEach(sq => {
-    localStorage.setItem(sq.id, JSON.stringify(sq));
-  })
-
-  listAllSavedSequences();
-}
-
-const playSelectedSound = (key = null) => {
-  if (!key) return;
-  if (samplers[key]) {
-    samplers[key].triggerAttackRelease(key, "8n");
-  }
-}
-
-const initKeyMapping = () => {
-  const keys = [
-    { key: 'Numpad0', function: () => stopSequencer() },
-    { key: 'NumpadAdd', function: () => setBpm(bpm.value + 1) },
-    { key: 'NumpadSubtract', function: () => setBpm(bpm.value - 1) },
-    { key: 'NumpadDecimal', function: () => playHalfBar() },
-  ];
-
-  allSavedSequences.value.forEach(sq => {
-    if (sq.numpad) {
-      const findDuplicate = keys.find(k => k.key === sq.numpad);
-      if (!findDuplicate) {
-        keys.push({
-          key: sq.numpad, function: () => {
-            addToQueue(sq.id)
-          }
-        });
-      }
-    }
-  }
-  )
-
-  keyMapping(keys);
-}
-
-watch(bpm, (newBpm) => {
-  setBpm(newBpm);
-});
-
-onMounted(() => {
-  initToneLoad();
-  clearAllSavedSequences();
-  setDefaultSequences();
-});
+const {
+  bpm,
+  currentStep,
+  currentSequence,
+  sequenceName,
+  sequenceColor,
+  sequenceCategory,
+  numpadKey,
+  instruments,
+  numSteps,
+  sequence,
+  sequenceQueue,
+  waitingForHalfBar,
+  groupByCategory,
+  changeVolume,
+  toggleStep,
+  startSequencer,
+  stopSequencer,
+  playHalfBar,
+  saveSequence,
+  deleteSequence,
+  playSelectedSound,
+  addToQueue,
+} = usePercussionLoop()
 </script>
 
 <template>

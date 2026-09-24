@@ -1,55 +1,40 @@
 import * as Tone from 'tone'
 
-interface ISampler {
-  url: { key: string; value: string }
-  release: number
+interface InstrumentSample {
+  note: string
+  url: string
   volume: number
-  baseUrl: string
+  pitch?: number
 }
 
-const makeSampler = (
-  data: ISampler = {
-    url: { key: '', value: '' },
-    release: 1,
-    volume: -20,
-    baseUrl: '/',
-  },
-) => {
-  return new Tone.Sampler({
-    urls: {
-      [data.url.key]: data.url.value,
-    },
-    release: 1,
-    volume: data.volume,
-    baseUrl: '/',
-  })
-}
+export function createSamplerBank(instruments: InstrumentSample[]) {
+  const samplers: Record<string, Tone.Sampler> = {}
+  const effects: Tone.PitchShift[] = []
 
-const loadSamplers = (instruments = []) => {
-  let samplers = {}
   for (const instrument of instruments) {
-    const sampler = makeSampler({
-      url: {
-        key: instrument.note,
-        value: instrument.url,
-      },
+    const sampler = new Tone.Sampler({
+      urls: { [instrument.note]: instrument.url },
+      release: 1,
       volume: instrument.volume,
-      release: instrument.release,
-      baseUrl: instrument.baseUrl,
+      baseUrl: '/',
     })
-
     const pitchShift = new Tone.PitchShift({
-      pitch: instrument?.pitch || 0,
+      pitch: instrument.pitch || 0,
       windowSize: 0.03,
       feedback: 0,
     })
-
     pitchShift.toDestination()
     sampler.connect(pitchShift)
+    effects.push(pitchShift)
+
     samplers[instrument.note] = sampler
   }
 
-  return samplers
+  return {
+    samplers,
+    dispose() {
+      Object.values(samplers).forEach((sampler) => sampler.dispose())
+      effects.forEach((effect) => effect.dispose())
+    },
+  }
 }
-
-export { loadSamplers }
