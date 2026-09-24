@@ -12,24 +12,24 @@
   },
   "dependencies": {
     "@primeuix/themes": "^1.2.5",
-    "@tabler/icons-vue": "^3.40.0",
-    "@tailwindcss/vite": "^4.2.1",
+    "@tabler/icons-vue": "^3.48.0",
+    "@tailwindcss/vite": "^4.3.3",
     "pinia": "^3.0.4",
-    "primevue": "^4.5.4",
-    "tailwindcss": "^4.2.1",
+    "primevue": "^4.5.5",
+    "tailwindcss": "^4.3.3",
     "tone": "^15.1.22",
-    "vue": "^3.5.30",
+    "vue": "^3.5.43",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.4",
-    "@vitejs/plugin-vue": "^6.0.5",
+    "@eslint/js": "^9.39.5",
+    "@vitejs/plugin-vue": "^6.0.9",
     "@vue/eslint-config-prettier": "^10.2.0",
-    "eslint": "^9.39.4",
+    "eslint": "^9.39.5",
     "eslint-plugin-vue": "~10.2.0",
     "globals": "^16.5.0",
     "prettier": "3.5.3",
-    "vite": "^7.3.1",
-    "vite-plugin-vue-devtools": "^7.7.9"
+    "vite": "^7.3.6",
+    "vite-plugin-vue-devtools": "^7.7.10"
   }
 }
