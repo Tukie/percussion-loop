@@ -3,6 +3,7 @@ import { createPlaybackController } from '@/controllers/playback.controller'
 import { getGetInstrument } from '@/services/instrument.service'
 import { keyMapping } from '@/services/keyMapping.service'
 import { getDefaultSequence } from '@/services/sequences.service'
+import { countLoopPages, getLoopPageSlots } from '@/services/loopLayout.service'
 import { createSequenceStorage, groupSequencesByCategory } from '@/services/sequenceStorage.service'
 
 export function usePercussionLoop() {
@@ -27,6 +28,13 @@ export function usePercussionLoop() {
   })
   const activeGroup = computed(() =>
     groupByCategory.value.find((group) => group.name === activeCategory.value),
+  )
+  const pageCount = computed(() => countLoopPages(activeGroup.value?.sequences ?? []))
+  const loopPages = computed(() =>
+    Array.from({ length: pageCount.value }, (_, index) => ({
+      number: index + 1,
+      slots: getLoopPageSlots(activeGroup.value?.sequences ?? [], index),
+    })),
   )
 
   let unbindKeys = () => {}
@@ -81,9 +89,14 @@ export function usePercussionLoop() {
     refreshSavedSequences()
   }
 
+  const moveSequence = (id, position) => {
+    if (storage.move(id, position)) savedSequences.value = storage.list()
+  }
+
   onMounted(() => {
     playback.initialize()
     storage.seedDefaults()
+    storage.ensurePositions()
     refreshSavedSequences()
   })
 
@@ -108,6 +121,8 @@ export function usePercussionLoop() {
     groupByCategory,
     activeCategory,
     activeGroup,
+    pageCount,
+    loopPages,
     changeVolume: playback.changeVolume,
     toggleStep: playback.toggleStep,
     startSequencer: playback.startSequencer,
@@ -115,6 +130,7 @@ export function usePercussionLoop() {
     playHalfBar: playback.playHalfBar,
     saveSequence,
     deleteSequence,
+    moveSequence,
     playSelectedSound: playback.playSelectedSound,
     addToQueue,
   }

@@ -1,8 +1,9 @@
 <script setup>
 import BPMControl from '@/components/BPMControl.vue'
-import LoopItem from '@/components/LoopItem.vue'
+import LoopGridCell from '@/components/LoopGridCell.vue'
 import MixerComponent from '@/components/MixerComponent.vue'
 import { usePercussionLoop } from '@/composable/usePercussionLoop'
+import { DnDProvider } from '@vue-dnd-kit/core'
 import Accordion from 'primevue/accordion'
 import AccordionPanel from 'primevue/accordionpanel'
 import AccordionHeader from 'primevue/accordionheader'
@@ -25,6 +26,8 @@ const {
   groupByCategory,
   activeCategory,
   activeGroup,
+  pageCount,
+  loopPages,
   changeVolume,
   toggleStep,
   startSequencer,
@@ -32,6 +35,7 @@ const {
   playHalfBar,
   saveSequence,
   deleteSequence,
+  moveSequence,
   playSelectedSound,
   addToQueue,
 } = usePercussionLoop()
@@ -164,11 +168,21 @@ const {
             </button>
           </div>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-          <LoopItem v-for="sq in activeGroup.sequences" :key="sq.id" @addToQueue="addToQueue"
-            @deleteSequence="deleteSequence" :sq :playing="currentSequence === sq.id"
-            :inQueue="sequenceQueue.includes(sq.id)" />
-        </div>
+        <DnDProvider>
+          <div class="space-y-8">
+            <div v-for="page in loopPages" :key="page.number" class="space-y-3">
+              <h2 v-if="pageCount > 1" class="text-center text-sm font-medium text-gray-400">หน้า {{ page.number }}</h2>
+              <div class="overflow-x-auto">
+                <div class="grid min-w-[720px] grid-cols-4 gap-4">
+                  <LoopGridCell v-for="slot in page.slots" :key="`${activeCategory}-${slot.position}`"
+                    :position="slot.position" :sequence="slot.sequence" :category="activeGroup.name"
+                    :playing="currentSequence === slot.sequence?.id" :in-queue="sequenceQueue.includes(slot.sequence?.id)"
+                    @move-sequence="moveSequence" @addToQueue="addToQueue" @deleteSequence="deleteSequence" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </DnDProvider>
       </section>
 
     </main>
