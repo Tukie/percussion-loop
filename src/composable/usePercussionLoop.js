@@ -15,6 +15,19 @@ export function usePercussionLoop() {
   const numpadKey = ref('')
   const savedSequences = ref([])
   const groupByCategory = computed(() => groupSequencesByCategory(savedSequences.value))
+  const selectedCategory = ref(null)
+  const activeCategory = computed({
+    get: () =>
+      groupByCategory.value.some((group) => group.name === selectedCategory.value)
+        ? selectedCategory.value
+        : (groupByCategory.value[0]?.name ?? null),
+    set: (category) => {
+      selectedCategory.value = category
+    },
+  })
+  const activeGroup = computed(() =>
+    groupByCategory.value.find((group) => group.name === activeCategory.value),
+  )
 
   let unbindKeys = () => {}
 
@@ -60,6 +73,7 @@ export function usePercussionLoop() {
       numpad: numpadKey.value,
     })
     refreshSavedSequences()
+    activeCategory.value = sequenceCategory.value
   }
 
   const deleteSequence = (id) => {
@@ -92,6 +106,8 @@ export function usePercussionLoop() {
     sequenceQueue: playback.sequenceQueue,
     waitingForHalfBar: playback.waitingForHalfBar,
     groupByCategory,
+    activeCategory,
+    activeGroup,
     changeVolume: playback.changeVolume,
     toggleStep: playback.toggleStep,
     startSequencer: playback.startSequencer,

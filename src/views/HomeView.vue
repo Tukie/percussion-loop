@@ -23,6 +23,8 @@ const {
   sequenceQueue,
   waitingForHalfBar,
   groupByCategory,
+  activeCategory,
+  activeGroup,
   changeVolume,
   toggleStep,
   startSequencer,
@@ -148,13 +150,26 @@ const {
         <div class="h-2 w-4 rounded-sm" :class="currentStep >= 25 ? 'bg-yellow-300' : 'bg-gray-600'"></div>
       </div>
 
-      <div class="flex flex-col gap-2" v-for="group in groupByCategory" :key="group">
-        <span class="fw-semibold p-2 rounded-full bg-gray-700 text-center mb-3 text-xs">{{ group.name }}</span>
-        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
-          <LoopItem v-for="sq in group.sequences" :key="sq" @addToQueue="addToQueue" @deleteSequence="deleteSequence"
-            :sq :playing="currentSequence === sq.id" :inQueue="sequenceQueue.includes(sq.id)" />
+      <section v-if="activeGroup" class="space-y-5">
+        <div class="flex justify-center">
+          <div role="group" aria-label="กลุ่มจังหวะ"
+            class="inline-flex max-w-full gap-1 overflow-x-auto rounded-full border border-gray-700 bg-gray-900 p-1.5 shadow-inner">
+            <button v-for="group in groupByCategory" :key="group.name" type="button"
+              :aria-pressed="activeCategory === group.name" @click="activeCategory = group.name"
+              class="min-w-28 shrink-0 rounded-full px-6 py-2.5 text-base font-semibold whitespace-nowrap transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-400"
+              :class="activeCategory === group.name
+                ? 'bg-teal-600 text-white shadow-md shadow-teal-950/50'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'">
+              {{ group.name }}
+            </button>
+          </div>
         </div>
-      </div>
+        <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-4">
+          <LoopItem v-for="sq in activeGroup.sequences" :key="sq.id" @addToQueue="addToQueue"
+            @deleteSequence="deleteSequence" :sq :playing="currentSequence === sq.id"
+            :inQueue="sequenceQueue.includes(sq.id)" />
+        </div>
+      </section>
 
     </main>
 
