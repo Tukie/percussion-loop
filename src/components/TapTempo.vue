@@ -22,7 +22,7 @@ const handleUseBPM = () => {
 </script>
 
 <template>
-  <Button class="shrink-0" @click="openDialog = true">Tap Tempo</Button>
+  <Button class="shrink-0 bg-white! text-black! border-white! hover:bg-gray-100!" @click="openDialog = true">Tap Tempo</Button>
 
   <Dialog v-model:visible="openDialog" modal header="Tap Tempo" :style="{ width: '25rem' }">
     <div class="flex flex-col gap-8 items-center justify-center p-5">

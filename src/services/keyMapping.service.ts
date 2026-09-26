@@ -1,15 +1,11 @@
 const keyMapping = (data: Array<{ key: string; function: () => void }> = []) => {
-  document.addEventListener('keydown', (event) => {
-    const key = event.code
+  const onKeyDown = (event: KeyboardEvent) => {
+    const binding = data.find((item) => item.key === event.code)
+    binding?.function()
+  }
 
-    if (!data.length) return
-
-    data.forEach((item) => {
-      if (item.key === key) {
-        item.function()
-      }
-    })
-  })
+  document.addEventListener('keydown', onKeyDown)
+  return () => document.removeEventListener('keydown', onKeyDown)
 }
 
 export { keyMapping }
