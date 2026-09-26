@@ -94,6 +94,17 @@ export function usePercussionLoop() {
     refreshSavedSequences()
   }
 
+  const exportSequences = () => storage.exportBackup()
+
+  const importSequences = (backup) => {
+    const count = storage.importBackup(backup)
+    playback.stopSequencer()
+    selectedLoopId.value = null
+    refreshSavedSequences()
+    selectedCategory.value = null
+    return count
+  }
+
   const toggleOrdering = () => {
     ordering.value = !ordering.value
     selectedLoopId.value = null
@@ -153,6 +164,8 @@ export function usePercussionLoop() {
     playHalfBar: playback.playHalfBar,
     saveSequence,
     deleteSequence,
+    exportSequences,
+    importSequences,
     toggleOrdering,
     selectLoop,
     placeSequence,
