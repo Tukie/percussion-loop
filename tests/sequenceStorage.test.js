@@ -130,6 +130,40 @@ test('preserves a loop position when saving the same name again', () => {
   assert.equal(storage.get(first.id), null)
 })
 
+test('backup restores loops and positions without replacing unrelated browser data', () => {
+  const source = createSequenceStorage(new MemoryStorage())
+  source.save({
+    name: 'Mine',
+    category: 'ช้า',
+    color: '#ffffff',
+    numpad: 'Numpad1',
+    bpm: 120,
+    sequence: Array.from({ length: 13 }, (_, index) => Array(index === 12 ? 31 : 32).fill(false)),
+  })
+  const backup = source.exportBackup()
+  const browserStorage = new MemoryStorage()
+  browserStorage.setItem('theme', 'dark')
+  const target = createSequenceStorage(browserStorage)
+  target.save({ name: 'Old', category: 'ช้า' })
+
+  assert.equal(target.importBackup(backup), 1)
+  assert.deepEqual(target.list(), backup.sequences)
+  assert.equal(browserStorage.getItem('theme'), 'dark')
+})
+
+test('invalid backup does not delete saved loops', () => {
+  const storage = createSequenceStorage(new MemoryStorage())
+  const saved = storage.save({ name: 'Keep', category: 'ช้า' })
+  const backup = {
+    format: 'percussion-loop-backup',
+    version: 1,
+    sequences: [{ ...saved, sequence: [['bad step']] }],
+  }
+
+  assert.throws(() => storage.importBackup(backup), /ข้อมูลจังหวะ/)
+  assert.deepEqual(storage.list(), [saved])
+})
+
 test('keeps sixteen visible slots and adds a new page when full', () => {
   const sequences = Array.from({ length: 16 }, (_, position) => ({ position }))
 

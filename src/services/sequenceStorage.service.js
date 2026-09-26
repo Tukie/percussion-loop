@@ -1,4 +1,5 @@
 const sequencePrefix = 'sequence-'
+const backupFormat = 'percussion-loop-backup'
 
 const isValidPosition = (position) => Number.isSafeInteger(position) && position >= 0
 
@@ -112,5 +113,75 @@ export function createSequenceStorage(storage, defaults = []) {
     return true
   }
 
-  return { get, list, seedDefaults, ensurePositions, save, remove, move }
+  const exportBackup = () => ({
+    format: backupFormat,
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    sequences: list(),
+  })
+
+  const importBackup = (backup) => {
+    if (
+      !backup ||
+      backup.format !== backupFormat ||
+      backup.version !== 1 ||
+      !Array.isArray(backup.sequences)
+    ) {
+      throw new Error('ไฟล์สำรองไม่ถูกต้องหรือเป็นเวอร์ชันที่ไม่รองรับ')
+    }
+
+    const ids = new Set()
+    for (const item of backup.sequences) {
+      if (
+        !item ||
+        typeof item.id !== 'string' ||
+        !item.id.startsWith(sequencePrefix) ||
+        ids.has(item.id) ||
+        typeof item.name !== 'string' ||
+        typeof item.category !== 'string' ||
+        typeof item.color !== 'string' ||
+        typeof item.numpad !== 'string' ||
+        !Number.isFinite(item.bpm) ||
+        !Array.isArray(item.sequence) ||
+        item.sequence.length !== 13 ||
+        // Some shipped default loops have a short row; playback treats absent steps as off.
+        !item.sequence.every(
+          (row) =>
+            Array.isArray(row) &&
+            row.length > 0 &&
+            row.length <= 32 &&
+            row.every((step) => typeof step === 'boolean'),
+        ) ||
+        (item.position !== undefined && !isValidPosition(item.position))
+      ) {
+        throw new Error('ข้อมูลจังหวะในไฟล์สำรองไม่ถูกต้อง')
+      }
+      ids.add(item.id)
+    }
+
+    const previous = list()
+    try {
+      for (const item of previous) storage.removeItem(item.id)
+      for (const item of backup.sequences) storage.setItem(item.id, JSON.stringify(item))
+      ensurePositions()
+    } catch (error) {
+      for (const item of backup.sequences) storage.removeItem(item.id)
+      for (const item of previous) storage.setItem(item.id, JSON.stringify(item))
+      throw error
+    }
+
+    return backup.sequences.length
+  }
+
+  return {
+    get,
+    list,
+    seedDefaults,
+    ensurePositions,
+    save,
+    remove,
+    move,
+    exportBackup,
+    importBackup,
+  }
 }
